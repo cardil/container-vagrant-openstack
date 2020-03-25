@@ -5,4 +5,5 @@ RUN dnf install -y \
     vagrant-openstack-provider \
     ansible \
     openssh-clients \
+    rsync \
     && dnf clean all
