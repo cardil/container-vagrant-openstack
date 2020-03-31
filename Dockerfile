@@ -6,4 +6,5 @@ RUN dnf install -y \
     ansible \
     openssh-clients \
     rsync \
+    git \
     && dnf clean all
