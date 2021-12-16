@@ -1,4 +1,4 @@
-FROM docker.io/library/fedora:31
+FROM registry.fedoraproject.org/fedora-minimal:35
 
 RUN dnf install -y \
     vagrant \
