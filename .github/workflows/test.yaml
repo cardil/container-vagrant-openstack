@@ -1,0 +1,69 @@
+---
+
+name: Tests
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - '**'
+
+env:
+  REGISTRY: quay.io
+  IMAGE_NAME: cardil/vagrant-openstack
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Prepare
+        id: prep
+        run: .github/workflows/prepare.sh
+
+      - name: Build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ steps.prep.outputs.tags }}
+          containerfiles: Containerfile
+          platforms: linux/amd64,linux/ppc64le,linux/s390x
+          extra-args: --ulimit nofile=51200:51200
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+
+      - name: Login to registry
+        uses: redhat-actions/podman-login@v1
+        if: ${{ steps.prep.outputs.push == 'true' }}
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Push to registry
+        if: ${{ steps.prep.outputs.push == 'true' }}
+        id: push-to-registry
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ steps.build-image.outputs.tags }}
+
+      - name: Print image url
+        if: ${{ steps.prep.outputs.push == 'true' }}
+        run: echo "Image pushed to ${{ steps.push-to-registry.outputs.registry-paths }}"

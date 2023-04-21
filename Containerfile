@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:35
+FROM quay.io/fedora/fedora:37
 
 RUN dnf install -y \
     vagrant \
